@@ -9,6 +9,9 @@ const __dirname = path.dirname(__filename);
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
+      // IMPORTANTE: Em produção, substitua '/nome-do-repositorio/' pelo nome do seu repositório no GitHub.
+      // Exemplo: se a URL for https://usuario.github.io/meu-projeto/, use '/meu-projeto/'
+      base: mode === 'production' ? '/ModeloMelhoriaProcessos/' : '/',
       server: {
         port: 3000,
         host: '0.0.0.0',
