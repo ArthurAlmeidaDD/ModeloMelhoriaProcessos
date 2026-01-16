@@ -51,10 +51,15 @@ export const ProcessTable: React.FC<ProcessTableProps> = ({ data, onUpdate }) =>
     const newStep: ProcessStep = {
       id: generateId(),
       name: '',
+      role: '',
       currentScenario: '',
       futureScenario: '',
+      idealScenario: '',
+      inputs: [],
+      outputs: [],
       noImprovement: false,
-      userCards: []
+      userCards: [],
+      mappings: []
     };
     onUpdate({ ...data, steps: [...data.steps, newStep] });
   };

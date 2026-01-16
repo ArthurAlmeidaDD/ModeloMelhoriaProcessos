@@ -57,7 +57,7 @@ export const UserStoryCard: React.FC<UserStoryCardProps> = ({ card, onUpdate, on
              />
           </div>
         </div>
-        <Button variant="ghost" size="icon" onClick={onDelete} className="h-6 w-6 text-slate-400 hover:text-red-500">
+        <Button variant="ghost" size="icon" onClick={onDelete} className="h-6 w-6 text-slate-400 hover:text-red-500 hover:bg-red-50" title="Remover Usuário">
           <Trash2 className="w-4 h-4" />
         </Button>
       </div>
@@ -87,7 +87,8 @@ export const UserStoryCard: React.FC<UserStoryCardProps> = ({ card, onUpdate, on
             </div>
             <button 
               onClick={() => removeStory(story.id)}
-              className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-opacity mt-6"
+              className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-opacity mt-7 p-1"
+              title="Remover História"
             >
               <Trash2 className="w-3 h-3" />
             </button>

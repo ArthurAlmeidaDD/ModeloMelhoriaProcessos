@@ -1,18 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { ProcessHeader } from './components/ProcessHeader';
-import { ProcessTable } from './components/ProcessTable';
-import { ExportButtons } from './components/ExportButtons';
-import { ProcessImprovement } from './types/process';
-import { loadFromLocalStorage, saveToLocalStorage, validateProcessJson } from './utils/exportUtils';
-import { FileWarning, CheckCircle } from 'lucide-react';
+import { Timeline } from './components/Timeline';
+import { StepDetails } from './components/StepDetails';
+import { ProjectView } from './components/ProjectView';
+import { ProcessSidebar } from './components/ProcessSidebar';
+import { ProcessImprovement, ProcessStep } from './types/process';
+import { loadFromLocalStorage, saveToLocalStorage, validateProcessJson, getEmptyProcess } from './utils/exportUtils';
+import { generateId, cn } from './lib/utils';
+import { FileWarning, CheckCircle, LayoutTemplate, Rocket } from 'lucide-react';
 
 function App() {
   const [data, setData] = useState<ProcessImprovement | null>(null);
+  const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
+  const [currentView, setCurrentView] = useState<'process' | 'project'>('process');
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   useEffect(() => {
     const loadedData = loadFromLocalStorage();
     setData(loadedData);
+    if (loadedData.steps.length > 0) {
+        setSelectedStepId(loadedData.steps[0].id);
+    }
   }, []);
 
   useEffect(() => {
@@ -34,10 +43,6 @@ function App() {
     setData({ ...data, [field]: value });
   };
 
-  const handleFullUpdate = (newData: ProcessImprovement) => {
-    setData(newData);
-  };
-
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) {
@@ -47,6 +52,7 @@ function App() {
                   const importedData = JSON.parse(event.target?.result as string);
                   if (validateProcessJson(importedData)) {
                       setData(importedData);
+                      if(importedData.steps.length > 0) setSelectedStepId(importedData.steps[0].id);
                       showNotification('Projeto carregado com sucesso!', 'success');
                   } else {
                       showNotification('Arquivo JSON inválido ou corrompido.', 'error');
@@ -57,19 +63,64 @@ function App() {
           };
           reader.readAsText(file);
       }
-      // Reset input value to allow importing the same file again if needed
       e.target.value = '';
   };
 
-  if (!data) return (
-    <div className="flex flex-col items-center justify-center h-screen bg-slate-50 gap-4">
-      <div className="w-12 h-12 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
-      <p className="text-slate-500 font-medium animate-pulse">Iniciando ProcessFlow...</p>
-    </div>
-  );
+  const updateSteps = (newSteps: ProcessStep[]) => {
+      if (!data) return;
+      setData({ ...data, steps: newSteps });
+  };
+
+  const handleAddStep = () => {
+      if (!data) return;
+      const newStep: ProcessStep = {
+          id: generateId(),
+          name: 'Nova Etapa',
+          role: '',
+          currentScenario: '',
+          futureScenario: '',
+          idealScenario: '',
+          inputs: [],
+          outputs: [],
+          noImprovement: false,
+          userCards: [],
+          mappings: []
+      };
+      const newSteps = [...data.steps, newStep];
+      setData({ ...data, steps: newSteps });
+      setSelectedStepId(newStep.id);
+  };
+
+  const handleDeleteStep = (id: string) => {
+      if (!data) return;
+      
+      if(confirm("Tem certeza que deseja remover esta etapa?")) {
+          const newSteps = data.steps.filter(s => s.id !== id);
+          setData({ ...data, steps: newSteps });
+
+          // Se a etapa deletada era a selecionada, seleciona a primeira disponível ou limpa
+          if (selectedStepId === id) {
+              if (newSteps.length > 0) {
+                  setSelectedStepId(newSteps[0].id);
+              } else {
+                  setSelectedStepId(null);
+              }
+          }
+      }
+  };
+
+  const handleUpdateSelectedStep = (updatedStep: ProcessStep) => {
+      if (!data) return;
+      const newSteps = data.steps.map(s => s.id === updatedStep.id ? updatedStep : s);
+      setData({ ...data, steps: newSteps });
+  }
+
+  if (!data) return null;
+
+  const selectedStep = data.steps.find(s => s.id === selectedStepId);
 
   return (
-    <div className="min-h-screen bg-[#f1f5f9] pb-24 font-sans text-slate-900 selection:bg-brand-100">
+    <div className="flex flex-col h-screen w-screen bg-[#f1f5f9] overflow-hidden">
       
       {/* Toast Notification */}
       {notification && (
@@ -81,43 +132,79 @@ function App() {
         </div>
       )}
 
-      <div className="max-w-[1400px] mx-auto p-4 md:p-8 space-y-8">
-        
-        {/* Top Actions Bar */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-           <div className="flex items-center gap-2">
-              <div className="w-2 h-8 bg-brand rounded-full"></div>
-              <div>
-                <h1 className="text-sm font-bold text-slate-400 uppercase tracking-tighter">Projeto Ativo</h1>
-                <p className="text-lg font-bold text-slate-700 truncate max-w-[300px]">{data.title || 'Sem Título'}</p>
-              </div>
-           </div>
-           <ExportButtons data={data} onImport={handleImport} />
-        </div>
-
-        <ProcessHeader 
-          data={data} 
-          onUpdate={handleUpdate} 
-        />
-        
-        <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-200 overflow-hidden">
-           <div className="p-6 md:p-8">
-              <ProcessTable 
-                data={data} 
-                onUpdate={handleFullUpdate} 
-              />
-           </div>
-        </div>
-
-        <div className="flex flex-col items-center gap-2 text-slate-400 mt-12 mb-8">
-           <div className="flex items-center gap-4 text-xs font-medium bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm">
-              <span className="flex items-center gap-1"><kbd className="bg-slate-100 px-1.5 py-0.5 rounded border border-slate-300">Click</kbd> para editar</span>
-              <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
-              <span className="flex items-center gap-1"><kbd className="bg-slate-100 px-1.5 py-0.5 rounded border border-slate-300">Drag</kbd> para reordenar</span>
-           </div>
-           <p className="text-[10px] uppercase tracking-widest font-bold opacity-50">ProcessFlow Improvement Tool &copy; 2025</p>
-        </div>
+      {/* VIEW SWITCHER / TOP NAV */}
+      <div className="bg-slate-900 px-4 py-2 flex items-center justify-center border-b border-slate-800 shrink-0 z-50">
+          <div className="bg-slate-800 p-1 rounded-lg flex items-center gap-1">
+             <button 
+                onClick={() => setCurrentView('process')}
+                className={cn(
+                    "px-4 py-1.5 rounded-md text-xs font-bold uppercase tracking-wide flex items-center gap-2 transition-all",
+                    currentView === 'process' ? "bg-blue-600 text-white shadow" : "text-slate-400 hover:text-white hover:bg-slate-700"
+                )}
+             >
+                <LayoutTemplate size={14} /> Mapeamento de Processo
+             </button>
+             <button 
+                onClick={() => setCurrentView('project')}
+                className={cn(
+                    "px-4 py-1.5 rounded-md text-xs font-bold uppercase tracking-wide flex items-center gap-2 transition-all",
+                    currentView === 'project' ? "bg-indigo-600 text-white shadow" : "text-slate-400 hover:text-white hover:bg-slate-700"
+                )}
+             >
+                <Rocket size={14} /> Visão do Projeto
+             </button>
+          </div>
       </div>
+
+      {currentView === 'process' ? (
+        <div className="flex-1 flex overflow-hidden">
+            {/* LEFT SIDEBAR (Collapsible) */}
+            <ProcessSidebar 
+                data={data}
+                onUpdate={handleUpdate}
+                isOpen={isSidebarOpen}
+                onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+            />
+
+            {/* MAIN CONTENT AREA */}
+            <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+                {/* 1. HEADER */}
+                <ProcessHeader 
+                    data={data} 
+                    onUpdate={handleUpdate} 
+                    onImport={handleImport}
+                />
+
+                {/* 2. TIMELINE (Fixed Height) */}
+                <Timeline 
+                    steps={data.steps}
+                    selectedStepId={selectedStepId}
+                    onSelectStep={setSelectedStepId}
+                    onUpdateSteps={updateSteps}
+                    onAddStep={handleAddStep}
+                    onDeleteStep={handleDeleteStep}
+                />
+
+                {/* 3. DETAILS AREA (Flexible) */}
+                {selectedStep ? (
+                    <StepDetails 
+                        key={selectedStep.id} 
+                        step={selectedStep}
+                        onUpdate={handleUpdateSelectedStep}
+                    />
+                ) : (
+                    <div className="flex-1 flex items-center justify-center text-slate-400">
+                        {data.steps.length === 0 
+                            ? "Adicione uma nova etapa para começar." 
+                            : "Selecione uma etapa para ver os detalhes."}
+                    </div>
+                )}
+            </div>
+        </div>
+      ) : (
+        <ProjectView data={data} onUpdate={handleUpdate} />
+      )}
+
     </div>
   );
 }
