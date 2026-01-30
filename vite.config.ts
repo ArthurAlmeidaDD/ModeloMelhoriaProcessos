@@ -10,7 +10,10 @@ const __dirname = path.dirname(__filename);
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
-      base: './', 
+      base: './', // Ensures assets are loaded correctly on GitHub Pages
+      build: {
+        outDir: 'dist',
+      },
       server: {
         port: 3000,
         host: '0.0.0.0', 

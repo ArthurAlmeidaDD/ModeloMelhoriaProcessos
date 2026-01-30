@@ -92,7 +92,7 @@ const SortableStep: React.FC<SortableStepProps> = ({ step, index, isSelected, sc
                 )}
                 style={{ height: `${height}px` }}
             >
-                {/* 1. Botões de Ação (Floating Outside - Ajustado top para -top-10 para dar mais ar) */}
+                {/* 1. Botões de Ação (Floating Outside - Ajustado top para -top-9 para evitar cortes) */}
                 <div className="absolute -top-9 right-0 left-0 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity gap-1 z-30 pointer-events-auto">
                     <button {...attributes} {...listeners} className="bg-slate-800 text-white p-1 rounded cursor-grab active:cursor-grabbing shadow-sm hover:bg-slate-700">
                         <GripVertical size={12} />
