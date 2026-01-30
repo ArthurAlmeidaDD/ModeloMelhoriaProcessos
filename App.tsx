@@ -1,27 +1,33 @@
+
 import React, { useState, useEffect } from 'react';
 import { ProcessHeader } from './components/ProcessHeader';
-import { Timeline } from './components/Timeline';
 import { StepDetails } from './components/StepDetails';
+import { NodeDetails } from './components/NodeDetails';
 import { ProjectView } from './components/ProjectView';
-import { ProcessSidebar } from './components/ProcessSidebar';
-import { ProcessImprovement, ProcessStep } from './types/process';
-import { loadFromLocalStorage, saveToLocalStorage, validateProcessJson, getEmptyProcess } from './utils/exportUtils';
+import { DeipLayout } from './components/DeipLayout';
+import { DeipItemDetails } from './components/DeipItemDetails';
+import { ProcessImprovement, ProcessStep, ProcessNode, DeipItem } from './types/process';
+import { loadFromLocalStorage, saveToLocalStorage, validateProcessJson, getEmptyProcess, ensureCompatibleData } from './utils/exportUtils';
 import { generateId, cn } from './lib/utils';
-import { FileWarning, CheckCircle, LayoutTemplate, Rocket } from 'lucide-react';
+import { FileWarning, CheckCircle, LayoutTemplate, Rocket, X } from 'lucide-react';
+
+type SelectedType = 'step' | 'deip' | 'start' | 'end' | null;
 
 function App() {
   const [data, setData] = useState<ProcessImprovement | null>(null);
-  const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
+  
+  // Selection State
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<SelectedType>(null);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+
   const [currentView, setCurrentView] = useState<'process' | 'project'>('process');
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   useEffect(() => {
     const loadedData = loadFromLocalStorage();
     setData(loadedData);
-    if (loadedData.steps.length > 0) {
-        setSelectedStepId(loadedData.steps[0].id);
-    }
+    // Initial state: Panel closed, no selection
   }, []);
 
   useEffect(() => {
@@ -43,6 +49,18 @@ function App() {
     setData({ ...data, [field]: value });
   };
 
+  const handleSelectElement = (id: string, type: SelectedType) => {
+      setSelectedId(id);
+      setSelectedType(type);
+      setIsPanelOpen(true);
+  };
+
+  const handleClosePanel = () => {
+      setIsPanelOpen(false);
+      setSelectedId(null);
+      setSelectedType(null);
+  };
+
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) {
@@ -51,8 +69,8 @@ function App() {
               try {
                   const importedData = JSON.parse(event.target?.result as string);
                   if (validateProcessJson(importedData)) {
-                      setData(importedData);
-                      if(importedData.steps.length > 0) setSelectedStepId(importedData.steps[0].id);
+                      setData(ensureCompatibleData(importedData));
+                      handleClosePanel();
                       showNotification('Projeto carregado com sucesso!', 'success');
                   } else {
                       showNotification('Arquivo JSON inválido ou corrompido.', 'error');
@@ -65,6 +83,8 @@ function App() {
       }
       e.target.value = '';
   };
+
+  // --- Handlers for Data Updates ---
 
   const updateSteps = (newSteps: ProcessStep[]) => {
       if (!data) return;
@@ -88,24 +108,15 @@ function App() {
       };
       const newSteps = [...data.steps, newStep];
       setData({ ...data, steps: newSteps });
-      setSelectedStepId(newStep.id);
+      handleSelectElement(newStep.id, 'step');
   };
 
   const handleDeleteStep = (id: string) => {
       if (!data) return;
-      
       if(confirm("Tem certeza que deseja remover esta etapa?")) {
           const newSteps = data.steps.filter(s => s.id !== id);
           setData({ ...data, steps: newSteps });
-
-          // Se a etapa deletada era a selecionada, seleciona a primeira disponível ou limpa
-          if (selectedStepId === id) {
-              if (newSteps.length > 0) {
-                  setSelectedStepId(newSteps[0].id);
-              } else {
-                  setSelectedStepId(null);
-              }
-          }
+          if (selectedId === id) handleClosePanel();
       }
   };
 
@@ -115,9 +126,57 @@ function App() {
       setData({ ...data, steps: newSteps });
   }
 
+  const handleUpdateStartNode = (updatedNode: ProcessNode) => {
+      if (!data) return;
+      setData({ ...data, startNode: updatedNode });
+  }
+
+  const handleUpdateEndNode = (updatedNode: ProcessNode) => {
+      if (!data) return;
+      setData({ ...data, endNode: updatedNode });
+  }
+
+  const handleUpdateDeipItems = (items: DeipItem[]) => {
+      if (!data) return;
+      setData({ ...data, deipItems: items });
+  }
+
+  const handleUpdateDeipItem = (updatedItem: DeipItem) => {
+      if (!data) return;
+      const newItems = (data.deipItems || []).map(i => i.id === updatedItem.id ? updatedItem : i);
+      setData({ ...data, deipItems: newItems });
+  }
+
+  const handleDeleteDeipItem = (id: string) => {
+      if (!data) return;
+      if(confirm("Excluir este item?")) {
+          const newItems = (data.deipItems || []).filter(i => i.id !== id);
+          setData({ ...data, deipItems: newItems });
+          if (selectedId === id) handleClosePanel();
+      }
+  }
+
   if (!data) return null;
 
-  const selectedStep = data.steps.find(s => s.id === selectedStepId);
+  // --- Render Logic for Bottom Panel Content ---
+  let PanelContent = null;
+  if (selectedType === 'start') {
+      PanelContent = <NodeDetails node={data.startNode || { cards: [] }} type="start" onUpdate={handleUpdateStartNode} />;
+  } else if (selectedType === 'end') {
+      PanelContent = <NodeDetails node={data.endNode || { cards: [] }} type="end" onUpdate={handleUpdateEndNode} />;
+  } else if (selectedType === 'step') {
+      const selectedStep = data.steps.find(s => s.id === selectedId);
+      if (selectedStep) {
+          PanelContent = <StepDetails step={selectedStep} onUpdate={handleUpdateSelectedStep} />;
+      }
+  } else if (selectedType === 'deip') {
+      const selectedItem = (data.deipItems || []).find(i => i.id === selectedId);
+      if (selectedItem) {
+          PanelContent = <DeipItemDetails item={selectedItem} onUpdate={handleUpdateDeipItem} onDelete={() => handleDeleteDeipItem(selectedItem.id)} />;
+      }
+  }
+
+  if (!PanelContent) PanelContent = <div className="p-8 text-center text-slate-400">Item não encontrado.</div>;
 
   return (
     <div className="flex flex-col h-screen w-screen bg-[#f1f5f9] overflow-hidden">
@@ -132,7 +191,7 @@ function App() {
         </div>
       )}
 
-      {/* VIEW SWITCHER / TOP NAV */}
+      {/* TOP NAV */}
       <div className="bg-slate-900 px-4 py-2 flex items-center justify-center border-b border-slate-800 shrink-0 z-50">
           <div className="bg-slate-800 p-1 rounded-lg flex items-center gap-1">
              <button 
@@ -142,7 +201,7 @@ function App() {
                     currentView === 'process' ? "bg-blue-600 text-white shadow" : "text-slate-400 hover:text-white hover:bg-slate-700"
                 )}
              >
-                <LayoutTemplate size={14} /> Mapeamento de Processo
+                <LayoutTemplate size={14} /> Mapeamento DEIP
              </button>
              <button 
                 onClick={() => setCurrentView('project')}
@@ -158,47 +217,47 @@ function App() {
 
       {currentView === 'process' ? (
         <div className="flex-1 flex overflow-hidden">
-            {/* LEFT SIDEBAR (Collapsible) */}
-            <ProcessSidebar 
-                data={data}
-                onUpdate={handleUpdate}
-                isOpen={isSidebarOpen}
-                onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
-            />
-
-            {/* MAIN CONTENT AREA */}
+            {/* MAIN WORKSPACE - No Sidebar */}
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-                {/* 1. HEADER */}
                 <ProcessHeader 
                     data={data} 
                     onUpdate={handleUpdate} 
                     onImport={handleImport}
                 />
 
-                {/* 2. TIMELINE (Fixed Height) */}
-                <Timeline 
-                    steps={data.steps}
-                    selectedStepId={selectedStepId}
-                    onSelectStep={setSelectedStepId}
+                {/* DEIP CANVAS (Timeline + Surroundings) */}
+                <DeipLayout 
+                    data={data}
+                    selectedId={selectedId}
+                    onSelect={handleSelectElement}
+                    onUpdateDeipItems={handleUpdateDeipItems}
+                    onDeleteDeipItem={handleDeleteDeipItem}
                     onUpdateSteps={updateSteps}
                     onAddStep={handleAddStep}
                     onDeleteStep={handleDeleteStep}
                 />
 
-                {/* 3. DETAILS AREA (Flexible) */}
-                {selectedStep ? (
-                    <StepDetails 
-                        key={selectedStep.id} 
-                        step={selectedStep}
-                        onUpdate={handleUpdateSelectedStep}
-                    />
-                ) : (
-                    <div className="flex-1 flex items-center justify-center text-slate-400">
-                        {data.steps.length === 0 
-                            ? "Adicione uma nova etapa para começar." 
-                            : "Selecione uma etapa para ver os detalhes."}
-                    </div>
-                )}
+                {/* COLLAPSIBLE BOTTOM PANEL */}
+                <div className={cn(
+                    "border-t border-slate-300 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] bg-white transition-all duration-300 ease-in-out flex flex-col z-30 relative",
+                    isPanelOpen ? "h-[450px]" : "h-0"
+                )}>
+                    {isPanelOpen && (
+                        <div className="flex-1 flex flex-col min-h-0 relative">
+                            {/* Close Button */}
+                            <button 
+                                onClick={handleClosePanel}
+                                className="absolute top-2 right-4 z-20 p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-full transition-colors"
+                                title="Fechar Painel"
+                            >
+                                <X size={16} />
+                            </button>
+                            
+                            {/* Content */}
+                            {PanelContent}
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
       ) : (

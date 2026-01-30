@@ -41,8 +41,8 @@ const ListEditor: React.FC<{
     };
 
     return (
-        <div className="flex flex-col h-1/2 min-h-0">
-            <div className="flex items-center gap-2 pb-2 mb-2 border-b border-slate-200">
+        <div className="flex flex-col h-full min-h-0">
+            <div className="flex items-center gap-2 pb-3 mb-2 border-b border-slate-200">
                 {headerIcon}
                 <span className="text-xs font-bold uppercase text-slate-600">{title}</span>
                 <span className="bg-slate-200 text-slate-600 text-[9px] px-1.5 rounded-full">{items.length}</span>
@@ -85,7 +85,7 @@ const ListEditor: React.FC<{
 }
 
 export const StepDetails: React.FC<StepDetailsProps> = ({ step, onUpdate }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'scenarios' | 'stories' | 'mappings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'scenarios' | 'mappings'>('overview');
 
   const addUserCard = () => {
     const newCard: UserCard = {
@@ -94,7 +94,6 @@ export const StepDetails: React.FC<StepDetailsProps> = ({ step, onUpdate }) => {
       stories: []
     };
     onUpdate({ ...step, userCards: [...step.userCards, newCard] });
-    setActiveTab('stories');
   };
 
   const updateUserCard = (index: number, updatedCard: UserCard) => {
@@ -152,6 +151,21 @@ export const StepDetails: React.FC<StepDetailsProps> = ({ step, onUpdate }) => {
                 <FileText size={16} /> Visão Geral
             </button>
             <button
+                onClick={() => setActiveTab('scenarios')}
+                className={cn(
+                    "py-4 text-sm font-bold border-b-2 flex items-center gap-2 transition-colors",
+                    activeTab === 'scenarios' 
+                        ? "border-blue-600 text-blue-700" 
+                        : "border-transparent text-slate-500 hover:text-slate-700"
+                )}
+            >
+                <Layout size={16} /> 
+                Cenários & Requisitos
+                <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full text-[10px]">
+                    {step.userCards.length}
+                </span>
+            </button>
+            <button
                 onClick={() => setActiveTab('mappings')}
                 className={cn(
                     "py-4 text-sm font-bold border-b-2 flex items-center gap-2 transition-colors",
@@ -166,32 +180,6 @@ export const StepDetails: React.FC<StepDetailsProps> = ({ step, onUpdate }) => {
                     {(step.mappings || []).length}
                 </span>
             </button>
-            <button
-                onClick={() => setActiveTab('scenarios')}
-                className={cn(
-                    "py-4 text-sm font-bold border-b-2 flex items-center gap-2 transition-colors",
-                    activeTab === 'scenarios' 
-                        ? "border-blue-600 text-blue-700" 
-                        : "border-transparent text-slate-500 hover:text-slate-700"
-                )}
-            >
-                <Layout size={16} /> Cenários & Melhoria
-            </button>
-            <button
-                onClick={() => setActiveTab('stories')}
-                className={cn(
-                    "py-4 text-sm font-bold border-b-2 flex items-center gap-2 transition-colors",
-                    activeTab === 'stories' 
-                        ? "border-blue-600 text-blue-700" 
-                        : "border-transparent text-slate-500 hover:text-slate-700"
-                )}
-            >
-                <Users size={16} /> 
-                Histórias de Usuário
-                <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full text-[10px]">
-                    {step.userCards.length}
-                </span>
-            </button>
         </div>
 
         {/* Content Area */}
@@ -200,93 +188,91 @@ export const StepDetails: React.FC<StepDetailsProps> = ({ step, onUpdate }) => {
                 
                 {/* OVERVIEW TAB */}
                 {activeTab === 'overview' && (
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-300 flex flex-col md:flex-row h-full overflow-hidden">
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-300 flex flex-col h-full overflow-hidden">
                         
-                        {/* COLUNA 1: IDENTIFICAÇÃO */}
-                        <div className="w-full md:w-72 bg-slate-50 border-b md:border-b-0 md:border-r border-slate-200 p-6 flex flex-col gap-6">
+                        {/* CABEÇALHO (LINHA SUPERIOR) */}
+                        <div className="shrink-0 p-4 border-b border-slate-200 bg-slate-50 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
                             
-                            <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-                                <div className="flex items-center gap-2 mb-2 text-slate-400">
-                                    <Hash size={14} />
-                                    <label className="text-[10px] uppercase font-bold">Etapa</label>
+                            {/* Nome da Etapa */}
+                            <div className="flex-1 w-full md:w-auto">
+                                <div className="flex items-center gap-2 mb-1 text-slate-400">
+                                    <Hash size={12} />
+                                    <label className="text-[10px] uppercase font-bold">Nome da Etapa</label>
                                 </div>
                                 <EditableText 
                                     value={step.name} 
                                     onChange={(val) => onUpdate({...step, name: val})}
                                     placeholder="Nome da Etapa"
-                                    multiline
-                                    className="text-lg font-bold text-slate-800 leading-tight w-full"
+                                    className="text-lg font-bold text-slate-800 leading-tight w-full bg-transparent hover:bg-slate-100 rounded px-1 -ml-1"
                                 />
                             </div>
 
-                            <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex-1 flex flex-col">
-                                <div className="flex items-center gap-2 mb-2 text-slate-400">
-                                    <UserCircle2 size={14} />
+                            {/* Responsável */}
+                            <div className="w-full md:w-1/3 border-l border-slate-200 pl-4">
+                                <div className="flex items-center gap-2 mb-1 text-slate-400">
+                                    <UserCircle2 size={12} />
                                     <label className="text-[10px] uppercase font-bold">Responsável / Setor</label>
                                 </div>
                                 <EditableText 
                                     value={step.role} 
                                     onChange={(val) => onUpdate({...step, role: val})}
                                     placeholder="Definir Responsável"
-                                    multiline
-                                    className="text-base font-semibold text-slate-700 leading-tight w-full"
+                                    className="text-sm font-semibold text-slate-700 w-full bg-transparent hover:bg-slate-100 rounded px-1 -ml-1"
                                 />
-                                <div className="mt-auto pt-4 border-t border-slate-50 text-xs text-slate-400 italic">
-                                    Defina quem executa esta atividade.
+                            </div>
+                        </div>
+
+                        {/* CORPO (3 COLUNAS) */}
+                        <div className="flex-1 flex flex-col md:flex-row min-h-0">
+                            
+                            {/* COLUNA ESQUERDA: ENTRADAS */}
+                            <div className="w-full md:w-72 bg-slate-50/50 border-r border-slate-200 p-4">
+                                <ListEditor 
+                                    title="Entradas (Inputs)"
+                                    items={step.inputs || []}
+                                    onChange={(items) => onUpdate({...step, inputs: items})}
+                                    placeholder="Adicionar entrada..."
+                                    icon={<ArrowRight size={10} />}
+                                    colorClass="text-green-600"
+                                    headerIcon={<FileInput size={14} className="text-green-600" />}
+                                />
+                            </div>
+
+                            {/* COLUNA CENTRAL: DESCRIÇÃO DO PROCESSO */}
+                            <div className="flex-1 p-5 flex flex-col bg-white overflow-hidden relative">
+                                <label className="text-xs font-bold uppercase text-slate-500 mb-3 flex items-center gap-2 px-1">
+                                    <div className="w-2 h-2 rounded-full bg-slate-800"></div>
+                                    Descrição do Processo (AS-IS)
+                                </label>
+                                <div className="flex-1 relative border border-slate-100 rounded-lg bg-slate-50/20">
+                                    <EditableText 
+                                        value={step.currentScenario} 
+                                        onChange={(val) => onUpdate({...step, currentScenario: val})}
+                                        placeholder="Descreva detalhadamente como o processo é executado hoje. O que acontece? Quais são as regras de negócio?"
+                                        multiline
+                                        className="w-full h-full text-sm leading-relaxed text-slate-700 p-4 resize-none focus:bg-white focus:border-blue-200 transition-all absolute inset-0 overflow-y-auto custom-scrollbar"
+                                    />
                                 </div>
                             </div>
 
-                        </div>
-
-                        {/* COLUNA 2: DESCRIÇÃO CENTRAL */}
-                        <div className="flex-1 p-6 flex flex-col bg-white overflow-hidden">
-                            <label className="text-xs font-bold uppercase text-slate-500 mb-3 flex items-center gap-2 px-1">
-                                <div className="w-2 h-2 rounded-full bg-slate-800"></div>
-                                Descrição do Processo Atual (AS-IS)
-                            </label>
-                            <div className="flex-1 relative">
-                                <EditableText 
-                                    value={step.currentScenario} 
-                                    onChange={(val) => onUpdate({...step, currentScenario: val})}
-                                    placeholder="Descreva detalhadamente como o processo é executado hoje. O que acontece? Quais são as regras de negócio?"
-                                    multiline
-                                    className="w-full h-full text-sm leading-relaxed text-slate-700 bg-slate-50/30 p-4 rounded-lg border border-slate-100 resize-none focus:bg-white focus:border-blue-200 transition-all absolute inset-0 overflow-y-auto custom-scrollbar"
+                            {/* COLUNA DIREITA: SAÍDAS */}
+                            <div className="w-full md:w-72 bg-slate-50/50 border-l border-slate-200 p-4">
+                                <ListEditor 
+                                    title="Saídas (Outputs)"
+                                    items={step.outputs || []}
+                                    onChange={(items) => onUpdate({...step, outputs: items})}
+                                    placeholder="Adicionar saída..."
+                                    icon={<ArrowRight size={10} />}
+                                    colorClass="text-blue-600"
+                                    headerIcon={<FileOutput size={14} className="text-blue-600" />}
                                 />
                             </div>
-                        </div>
 
-                        {/* COLUNA 3: ENTRADAS E SAÍDAS */}
-                        <div className="w-full md:w-80 bg-slate-50 border-t md:border-t-0 md:border-l border-slate-200 p-6 flex flex-col gap-6 h-full">
-                            
-                            {/* Entradas */}
-                            <ListEditor 
-                                title="Entradas (Inputs)"
-                                items={step.inputs || []}
-                                onChange={(items) => onUpdate({...step, inputs: items})}
-                                placeholder="Adicionar entrada..."
-                                icon={<ArrowRight size={10} />}
-                                colorClass="text-green-600"
-                                headerIcon={<FileInput size={14} className="text-green-600" />}
-                            />
-
-                            {/* Separator */}
-                            <div className="border-t border-slate-200"></div>
-
-                            {/* Saídas */}
-                            <ListEditor 
-                                title="Saídas (Outputs)"
-                                items={step.outputs || []}
-                                onChange={(items) => onUpdate({...step, outputs: items})}
-                                placeholder="Adicionar saída..."
-                                icon={<ArrowRight size={10} />}
-                                colorClass="text-blue-600"
-                                headerIcon={<FileOutput size={14} className="text-blue-600" />}
-                            />
                         </div>
                     </div>
                 )}
 
-                {/* MAPPINGS TAB (NEW) */}
+                {/* MAPPINGS TAB */}
                 {activeTab === 'mappings' && (
                     <div className="space-y-6">
                         <div className="flex justify-between items-center">
@@ -320,95 +306,110 @@ export const StepDetails: React.FC<StepDetailsProps> = ({ step, onUpdate }) => {
                     </div>
                 )}
 
-                {/* SCENARIOS TAB */}
+                {/* SCENARIOS & STORIES TAB (MERGED) */}
                 {activeTab === 'scenarios' && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full">
+                    <div className="flex flex-col gap-2 pb-4">
                         
-                        {/* AS IS */}
-                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-full min-h-[400px] relative overflow-hidden">
-                             <div className="p-3 border-b border-slate-100 bg-slate-50 rounded-t-xl flex items-center gap-2 pl-4">
-                                <div className="w-2 h-2 rounded-full bg-slate-500"></div>
-                                <span className="text-xs font-bold uppercase text-slate-600">Como É Hoje (AS-IS)</span>
-                            </div>
-                            <div className="flex-1 p-4 bg-slate-50/10">
-                                <EditableText 
-                                    value={step.currentScenario} 
-                                    onChange={(val) => onUpdate({...step, currentScenario: val})}
-                                    placeholder="Descrição do processo atual..."
-                                    multiline
-                                    className="h-full min-h-[300px] text-sm leading-relaxed text-slate-600"
-                                />
-                            </div>
-                        </div>
-
-                        {/* TO BE */}
-                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-full min-h-[400px] relative overflow-hidden ring-1 ring-blue-100">
-                             <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
-                             <div className="p-3 border-b border-slate-100 bg-blue-50/30 rounded-t-xl flex items-center gap-2 pl-4">
-                                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                                <span className="text-xs font-bold uppercase text-blue-700">Como Será (TO-BE)</span>
-                            </div>
-                            <div className="flex-1 p-4 pl-5">
-                                <EditableText 
-                                    value={step.futureScenario} 
-                                    onChange={(val) => onUpdate({...step, futureScenario: val})}
-                                    placeholder="Descreva a proposta de melhoria..."
-                                    multiline
-                                    className="h-full min-h-[300px] text-sm leading-relaxed text-slate-700"
-                                />
-                            </div>
-                        </div>
-
-                         {/* COULD BE */}
-                         <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-full min-h-[400px] relative overflow-hidden border-dashed border-purple-200">
-                             <div className="p-3 border-b border-slate-100 bg-purple-50/30 rounded-t-xl flex items-center gap-2">
-                                <Lightbulb className="w-4 h-4 text-purple-600" />
-                                <span className="text-xs font-bold uppercase text-purple-700">Poderia Ser (Ideal)</span>
-                            </div>
-                            <div className="flex-1 p-4">
-                                <EditableText 
-                                    value={step.idealScenario} 
-                                    onChange={(val) => onUpdate({...step, idealScenario: val})}
-                                    placeholder="Qual seria o cenário dos sonhos?"
-                                    multiline
-                                    className="h-full min-h-[300px] text-sm leading-relaxed text-purple-800/80 italic"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* STORIES TAB */}
-                {activeTab === 'stories' && (
-                    <div className="space-y-6">
-                        <div className="flex justify-between items-center">
-                            <h3 className="text-lg font-bold text-slate-700">Participantes e Requisitos</h3>
-                            <Button onClick={addUserCard} size="sm" className="bg-blue-600 hover:bg-blue-700">
-                                <Plus className="w-4 h-4 mr-2" /> Adicionar Usuário
-                            </Button>
-                        </div>
-
-                        {step.userCards.length === 0 ? (
-                            <div className="bg-white border-2 border-dashed border-slate-200 rounded-xl p-12 text-center flex flex-col items-center justify-center">
-                                <div className="bg-slate-50 p-4 rounded-full mb-4">
-                                    <Users className="w-8 h-8 text-slate-300" />
+                        {/* 1. SCENARIOS SECTION (COMPACT) */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            {/* AS IS */}
+                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col relative overflow-hidden">
+                                 <div className="p-2 border-b border-slate-100 bg-slate-50 rounded-t-xl flex items-center gap-2 pl-3">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-slate-500"></div>
+                                    <span className="text-[10px] font-bold uppercase text-slate-600">Como É Hoje (AS-IS)</span>
                                 </div>
-                                <h4 className="text-slate-600 font-medium mb-1">Nenhum usuário mapeado nesta etapa</h4>
-                                <p className="text-slate-400 text-sm mb-4">Adicione os papéis envolvidos para descrever suas necessidades.</p>
-                                <Button onClick={addUserCard} variant="outline" size="sm">Adicionar Primeiro Usuário</Button>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                                {step.userCards.map((card, idx) => (
-                                    <UserStoryCard
-                                        key={card.id}
-                                        card={card}
-                                        onUpdate={(updated) => updateUserCard(idx, updated)}
-                                        onDelete={() => deleteUserCard(idx)}
+                                <div className="p-2 bg-slate-50/10">
+                                    <EditableText 
+                                        value={step.currentScenario} 
+                                        onChange={(val) => onUpdate({...step, currentScenario: val})}
+                                        placeholder="Descrição do processo atual..."
+                                        multiline
+                                        className="text-sm leading-relaxed text-slate-600 min-h-[60px]"
                                     />
-                                ))}
+                                </div>
                             </div>
-                        )}
+
+                            {/* TO BE */}
+                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col relative overflow-hidden ring-1 ring-blue-100">
+                                 <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                                 <div className="p-2 border-b border-slate-100 bg-blue-50/30 rounded-t-xl flex items-center gap-2 pl-3">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                                    <span className="text-[10px] font-bold uppercase text-blue-700">Como Será (TO-BE)</span>
+                                </div>
+                                <div className="p-2 pl-3">
+                                    <EditableText 
+                                        value={step.futureScenario} 
+                                        onChange={(val) => onUpdate({...step, futureScenario: val})}
+                                        placeholder="Descreva a proposta de melhoria..."
+                                        multiline
+                                        className="text-sm leading-relaxed text-slate-700 min-h-[60px]"
+                                    />
+                                </div>
+                            </div>
+
+                             {/* COULD BE */}
+                             <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col relative overflow-hidden border-dashed border-purple-200">
+                                 <div className="p-2 border-b border-slate-100 bg-purple-50/30 rounded-t-xl flex items-center gap-2 pl-3">
+                                    <Lightbulb className="w-3 h-3 text-purple-600" />
+                                    <span className="text-[10px] font-bold uppercase text-purple-700">Poderia Ser (Ideal)</span>
+                                </div>
+                                <div className="p-2">
+                                    <EditableText 
+                                        value={step.idealScenario} 
+                                        onChange={(val) => onUpdate({...step, idealScenario: val})}
+                                        placeholder="Qual seria o cenário dos sonhos?"
+                                        multiline
+                                        className="text-sm leading-relaxed text-purple-800/80 italic min-h-[60px]"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* SEPARATOR */}
+                        <div className="relative my-1">
+                            <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                                <div className="w-full border-t border-slate-200"></div>
+                            </div>
+                            <div className="relative flex justify-center">
+                                <span className="bg-slate-50 px-2 text-slate-300">
+                                    <Users size={12} />
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* 2. USER STORIES SECTION */}
+                        <div className="space-y-2">
+                            <div className="flex justify-between items-center h-8">
+                                <div>
+                                    <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wide">Participantes e Histórias</h3>
+                                </div>
+                                <Button onClick={addUserCard} size="sm" className="bg-blue-600 hover:bg-blue-700 h-7 text-xs px-2">
+                                    <Plus className="w-3 h-3 mr-1" /> Adicionar Usuário
+                                </Button>
+                            </div>
+
+                            {step.userCards.length === 0 ? (
+                                <div className="bg-white border-2 border-dashed border-slate-200 rounded-xl p-6 text-center flex flex-col items-center justify-center">
+                                    <div className="bg-slate-50 p-2 rounded-full mb-2">
+                                        <Users className="w-5 h-5 text-slate-300" />
+                                    </div>
+                                    <h4 className="text-slate-600 font-medium mb-1 text-sm">Nenhum usuário mapeado</h4>
+                                    <p className="text-slate-400 text-xs mb-2">Adicione os papéis envolvidos para descrever suas necessidades.</p>
+                                    <Button onClick={addUserCard} variant="outline" size="sm" className="h-7 text-xs">Adicionar Primeiro Usuário</Button>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                                    {step.userCards.map((card, idx) => (
+                                        <UserStoryCard
+                                            key={card.id}
+                                            card={card}
+                                            onUpdate={(updated) => updateUserCard(idx, updated)}
+                                            onDelete={() => deleteUserCard(idx)}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
             </div>

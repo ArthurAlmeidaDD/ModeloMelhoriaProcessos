@@ -36,10 +36,12 @@ export const UserStoryCard: React.FC<UserStoryCardProps> = ({ card, onUpdate, on
     onUpdate({ ...card, stories: updatedStories });
   };
 
-  const removeStory = (storyId: string) => {
-    if (confirm('Remover esta história?')) {
-      onUpdate({ ...card, stories: card.stories.filter(s => s.id !== storyId) });
-    }
+  const removeStory = (e: React.MouseEvent, storyId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Exclusão direta para garantir funcionamento e agilidade
+    const newStories = card.stories.filter(s => s.id !== storyId);
+    onUpdate({ ...card, stories: newStories });
   };
 
   return (
@@ -86,11 +88,12 @@ export const UserStoryCard: React.FC<UserStoryCardProps> = ({ card, onUpdate, on
                />
             </div>
             <button 
-              onClick={() => removeStory(story.id)}
-              className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-opacity mt-7 p-1"
-              title="Remover História"
+              type="button"
+              onClick={(e) => removeStory(e, story.id)}
+              className="mt-6 text-slate-300 hover:text-red-600 hover:bg-red-50 p-1.5 rounded transition-all cursor-pointer z-10"
+              title="Excluir História"
             >
-              <Trash2 className="w-3 h-3" />
+              <Trash2 className="w-4 h-4" />
             </button>
           </div>
         ))}

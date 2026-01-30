@@ -86,10 +86,21 @@ export const ExportButtons: React.FC<ExportButtonsProps> = ({ data, onImport }) 
              <Table className="w-4 h-4 mr-3 text-green-600" />
              Planilha Excel (.xlsx)
         </button>
-        <button className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 flex items-center transition-colors font-medium" onClick={() => exportToPDF(data)}>
+        
+        {/* PDF Options */}
+        <div className="border-t border-slate-50 my-1"></div>
+        <button className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 flex items-center transition-colors font-medium" onClick={() => exportToPDF(data, 'simple')}>
              <FileType className="w-4 h-4 mr-3 text-red-600" />
-             Documento PDF (.pdf)
+             PDF (Resumido)
+             <span className="ml-auto text-[9px] text-slate-400 border border-slate-200 px-1 rounded">Cenários</span>
         </button>
+        <button className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 flex items-center transition-colors font-medium" onClick={() => exportToPDF(data, 'complete')}>
+             <FileType className="w-4 h-4 mr-3 text-red-600" />
+             PDF (Completo)
+             <span className="ml-auto text-[9px] text-slate-400 border border-slate-200 px-1 rounded">+Inputs/Outputs</span>
+        </button>
+
+        <div className="border-t border-slate-50 my-1"></div>
         <button className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 flex items-center transition-colors font-medium" onClick={() => exportToCSV(data)}>
              <FileText className="w-4 h-4 mr-3 text-slate-500" />
              Dados CSV (.csv)

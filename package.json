@@ -1,3 +1,4 @@
+
 {
   "name": "modelo-melhoria-processos",
   "private": true,
@@ -9,7 +10,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist"
+    "deploy": "gh-pages -d dist -t"
   },
   "dependencies": {
     "react": "^18.3.1",

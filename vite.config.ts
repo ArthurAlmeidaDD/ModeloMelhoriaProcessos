@@ -1,3 +1,4 @@
+
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { defineConfig, loadEnv } from 'vite';
@@ -12,8 +13,7 @@ export default defineConfig(({ mode }) => {
       base: './', 
       server: {
         port: 3000,
-        host: '0.0.0.0', // Permite acesso externo (necessário para containers)
-        allowedHosts: true, // Permite qualquer host (necessário para previews com URLs dinâmicas)
+        host: '0.0.0.0', 
       },
       plugins: [react()],
       define: {

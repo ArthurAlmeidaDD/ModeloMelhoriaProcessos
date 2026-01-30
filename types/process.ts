@@ -1,3 +1,4 @@
+
 export type StoryPriority = 'Essencial' | 'Deveria ter' | 'Poderia ter';
 
 export interface UserStory {
@@ -40,18 +41,46 @@ export interface Deliverable {
   linkedStoryIds: string[]; // IDs das histórias vinculadas a este entregável
 }
 
+// Novos tipos para Início/Fim
+export interface SimpleCard {
+  id: string;
+  title: string;
+  text: string;
+}
+
+export interface ProcessNode {
+  cards: SimpleCard[];
+}
+
+// DEIP Types
+export type DeipCategory = 'policies' | 'inputs' | 'outputs' | 'resources';
+
+export interface DeipItem {
+  id: string;
+  category: DeipCategory;
+  title: string;
+  description: string;
+  attention: boolean; // Flag para destaque (vermelho)
+}
+
 export interface ProcessImprovement {
   id: string;
   title: string;
   theme: string;
   sectors: string;
   managers: string;
+  startNode: ProcessNode;
+  endNode: ProcessNode;
   steps: ProcessStep[];
-  deliverables: Deliverable[]; // Lista de entregáveis do projeto
-  justification?: string; // Novo: Justificativa do projeto
-  objective?: string; // Novo: Objetivo do projeto
-  requirements?: string[]; // Novo: Lista de requisitos gerais
-  processRules?: string[]; // Novo: Regras do processo
-  risks?: string[]; // Novo: Riscos detectados
+  deliverables: Deliverable[];
+  
+  // DEIP Lists
+  deipItems: DeipItem[]; 
+
+  justification?: string;
+  objective?: string;
+  requirements?: string[];
+  processRules?: string[];
+  risks?: string[];
   updatedAt: string;
 }

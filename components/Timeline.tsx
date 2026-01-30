@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ProcessStep } from '../types/process';
 import { EditableText } from './EditableText';
@@ -28,6 +29,7 @@ interface TimelineProps {
   onUpdateSteps: (steps: ProcessStep[]) => void;
   onAddStep: () => void;
   onDeleteStep: (id: string) => void;
+  className?: string;
 }
 
 interface SortableStepProps {
@@ -137,7 +139,7 @@ const SortableStep: React.FC<SortableStepProps> = ({ step, index, isSelected, on
     );
 }
 
-export const Timeline: React.FC<TimelineProps> = ({ steps, selectedStepId, onSelectStep, onUpdateSteps, onAddStep, onDeleteStep }) => {
+export const Timeline: React.FC<TimelineProps> = ({ steps, selectedStepId, onSelectStep, onUpdateSteps, onAddStep, onDeleteStep, className }) => {
     
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -159,15 +161,19 @@ export const Timeline: React.FC<TimelineProps> = ({ steps, selectedStepId, onSel
     };
 
     return (
-        <div className="flex-shrink-0 bg-white border-b border-slate-200 h-[220px] relative flex flex-col">
+        <div className={cn(
+            "flex-shrink-0 bg-white border-b border-slate-200 h-[220px] relative flex flex-col",
+            className
+        )}>
             <div className="absolute top-0 left-0 bg-slate-50 px-3 py-1 rounded-br-lg text-[10px] font-bold text-slate-400 border-b border-r border-slate-200 z-20 flex items-center gap-1">
                 <Settings2 size={12} /> TIMELINE DO PROCESSO
             </div>
 
-            <div className="flex-1 overflow-x-auto custom-scrollbar flex items-center px-8 relative">
-                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                    <SortableContext items={steps.map(s => s.id)} strategy={horizontalListSortingStrategy}>
-                        <div className="flex items-start h-full pt-8 pb-4">
+            <div className="flex-1 overflow-x-auto custom-scrollbar flex px-8 relative">
+                <div className="flex items-start h-full pt-8 pb-4 min-w-max mx-auto">
+                    
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                        <SortableContext items={steps.map(s => s.id)} strategy={horizontalListSortingStrategy}>
                             {steps.map((step, index) => (
                                 <SortableStep
                                     key={step.id}
@@ -179,22 +185,31 @@ export const Timeline: React.FC<TimelineProps> = ({ steps, selectedStepId, onSel
                                     onDelete={() => onDeleteStep(step.id)}
                                 />
                             ))}
+                        </SortableContext>
+                    </DndContext>
                             
-                            {/* Add Button */}
-                            <div className="h-full flex items-center justify-center pl-4 pr-12 min-w-[100px]">
-                                <button 
-                                    onClick={onAddStep}
-                                    className="group flex flex-col items-center gap-2 text-slate-300 hover:text-blue-600 transition-colors"
-                                >
-                                    <div className="w-10 h-10 rounded-full border-2 border-dashed border-current flex items-center justify-center group-hover:bg-blue-50">
-                                        <Plus size={20} />
-                                    </div>
-                                    <span className="text-xs font-bold uppercase">Adicionar</span>
-                                </button>
-                            </div>
+                    {/* Add Button Area - Aligned */}
+                    <div className="flex flex-col items-center justify-start h-full min-w-[80px] pt-4 relative">
+                        {/* Spacer */}
+                        <div className="h-24 w-full"></div>
+                        
+                        {/* Connector Area */}
+                        <div className="h-12 w-full flex items-center justify-center relative shrink-0">
+                             {/* Line pass through */}
+                             <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-slate-200"></div>
+                             
+                             <button 
+                                onClick={onAddStep}
+                                className="w-8 h-8 rounded-full bg-white border-2 border-dashed border-slate-300 text-slate-400 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-all relative z-10"
+                                title="Adicionar Etapa"
+                            >
+                                <Plus size={16} />
+                            </button>
                         </div>
-                    </SortableContext>
-                </DndContext>
+                        <div className="mt-1 text-[9px] font-bold uppercase text-slate-300">Add</div>
+                    </div>
+
+                </div>
             </div>
         </div>
     );
