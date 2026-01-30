@@ -30,6 +30,7 @@ export interface ProcessStep {
   inputs: string[]; // Novo: Entradas do processo
   outputs: string[]; // Novo: Saídas do processo
   noImprovement: boolean;
+  attention?: boolean; // Novo: Destaque de atenção na etapa
   userCards: UserCard[];
   mappings: MappingNote[]; // Novo: Mapeamentos e entrevistas
 }
@@ -63,6 +64,12 @@ export interface DeipItem {
   attention: boolean; // Flag para destaque (vermelho)
 }
 
+export interface ProcessFlow {
+  id: string;
+  name: string;
+  steps: ProcessStep[];
+}
+
 export interface ProcessImprovement {
   id: string;
   title: string;
@@ -71,7 +78,13 @@ export interface ProcessImprovement {
   managers: string;
   startNode: ProcessNode;
   endNode: ProcessNode;
-  steps: ProcessStep[];
+  
+  // Alteração: Suporte a múltiplos fluxos
+  flows: ProcessFlow[];
+  
+  // Mantendo steps opcional para compatibilidade durante migração, mas o ideal é usar flows
+  steps?: ProcessStep[]; 
+
   deliverables: Deliverable[];
   
   // DEIP Lists

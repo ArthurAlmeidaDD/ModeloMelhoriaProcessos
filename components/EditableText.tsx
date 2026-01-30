@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { cn } from '../lib/utils';
 import { Pencil } from 'lucide-react';
 
-interface EditableTextProps {
+interface EditableTextProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange'> {
   value: string;
   onChange: (value: string) => void;
   multiline?: boolean;
@@ -19,7 +20,9 @@ export const EditableText: React.FC<EditableTextProps> = ({
   multiline = false,
   className,
   placeholder,
-  label
+  label,
+  style,
+  ...props
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [localValue, setLocalValue] = useState(value);
@@ -63,6 +66,7 @@ export const EditableText: React.FC<EditableTextProps> = ({
           onKeyDown={handleKeyDown}
           className={cn("min-h-[60px] shadow-sm", className)}
           placeholder={placeholder}
+          style={style}
         />
       );
     }
@@ -75,6 +79,7 @@ export const EditableText: React.FC<EditableTextProps> = ({
         onKeyDown={handleKeyDown}
         className={cn("shadow-sm", className)}
         placeholder={placeholder}
+        style={style}
       />
     );
   }
@@ -87,6 +92,8 @@ export const EditableText: React.FC<EditableTextProps> = ({
         !value && "text-slate-400 italic bg-slate-50/50",
         className
       )}
+      style={style}
+      {...props}
     >
       <span className="flex-1 break-words whitespace-pre-wrap">
         {value || placeholder}

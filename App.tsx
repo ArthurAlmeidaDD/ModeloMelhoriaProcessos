@@ -6,7 +6,7 @@ import { NodeDetails } from './components/NodeDetails';
 import { ProjectView } from './components/ProjectView';
 import { DeipLayout } from './components/DeipLayout';
 import { DeipItemDetails } from './components/DeipItemDetails';
-import { ProcessImprovement, ProcessStep, ProcessNode, DeipItem } from './types/process';
+import { ProcessImprovement, ProcessStep, ProcessNode, DeipItem, ProcessFlow } from './types/process';
 import { loadFromLocalStorage, saveToLocalStorage, validateProcessJson, getEmptyProcess, ensureCompatibleData } from './utils/exportUtils';
 import { generateId, cn } from './lib/utils';
 import { FileWarning, CheckCircle, LayoutTemplate, Rocket, X } from 'lucide-react';
@@ -15,6 +15,7 @@ type SelectedType = 'step' | 'deip' | 'start' | 'end' | null;
 
 function App() {
   const [data, setData] = useState<ProcessImprovement | null>(null);
+  const [activeFlowId, setActiveFlowId] = useState<string>('');
   
   // Selection State
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -27,7 +28,9 @@ function App() {
   useEffect(() => {
     const loadedData = loadFromLocalStorage();
     setData(loadedData);
-    // Initial state: Panel closed, no selection
+    if (loadedData.flows.length > 0) {
+        setActiveFlowId(loadedData.flows[0].id);
+    }
   }, []);
 
   useEffect(() => {
@@ -69,7 +72,11 @@ function App() {
               try {
                   const importedData = JSON.parse(event.target?.result as string);
                   if (validateProcessJson(importedData)) {
-                      setData(ensureCompatibleData(importedData));
+                      const compatible = ensureCompatibleData(importedData);
+                      setData(compatible);
+                      if (compatible.flows.length > 0) {
+                        setActiveFlowId(compatible.flows[0].id);
+                      }
                       handleClosePanel();
                       showNotification('Projeto carregado com sucesso!', 'success');
                   } else {
@@ -84,15 +91,52 @@ function App() {
       e.target.value = '';
   };
 
-  // --- Handlers for Data Updates ---
+  // --- Handlers for Flows ---
+
+  const handleAddFlow = () => {
+      if (!data) return;
+      const newFlow: ProcessFlow = {
+          id: generateId(),
+          name: 'Novo Fluxo',
+          steps: []
+      };
+      setData({ ...data, flows: [...data.flows, newFlow] });
+      setActiveFlowId(newFlow.id);
+  };
+
+  const handleDeleteFlow = (flowId: string) => {
+      if (!data) return;
+      if (data.flows.length <= 1) {
+          showNotification('É necessário ter pelo menos um fluxo.', 'error');
+          return;
+      }
+      if (confirm('Tem certeza? Todas as etapas deste fluxo serão excluídas.')) {
+          const newFlows = data.flows.filter(f => f.id !== flowId);
+          setData({ ...data, flows: newFlows });
+          if (activeFlowId === flowId) {
+              setActiveFlowId(newFlows[0].id);
+          }
+      }
+  };
+
+  const handleUpdateFlowName = (flowId: string, name: string) => {
+      if (!data) return;
+      const newFlows = data.flows.map(f => f.id === flowId ? { ...f, name } : f);
+      setData({ ...data, flows: newFlows });
+  };
+
+  // --- Handlers for Steps (Scoped to Flows) ---
 
   const updateSteps = (newSteps: ProcessStep[]) => {
       if (!data) return;
-      setData({ ...data, steps: newSteps });
+      const newFlows = data.flows.map(f => 
+          f.id === activeFlowId ? { ...f, steps: newSteps } : f
+      );
+      setData({ ...data, flows: newFlows });
   };
 
   const handleAddStep = () => {
-      if (!data) return;
+      if (!data || !activeFlowId) return;
       const newStep: ProcessStep = {
           id: generateId(),
           name: 'Nova Etapa',
@@ -106,25 +150,41 @@ function App() {
           userCards: [],
           mappings: []
       };
-      const newSteps = [...data.steps, newStep];
-      setData({ ...data, steps: newSteps });
+      
+      const newFlows = data.flows.map(f => {
+          if (f.id === activeFlowId) {
+              return { ...f, steps: [...f.steps, newStep] };
+          }
+          return f;
+      });
+
+      setData({ ...data, flows: newFlows });
       handleSelectElement(newStep.id, 'step');
   };
 
   const handleDeleteStep = (id: string) => {
       if (!data) return;
       if(confirm("Tem certeza que deseja remover esta etapa?")) {
-          const newSteps = data.steps.filter(s => s.id !== id);
-          setData({ ...data, steps: newSteps });
+          const newFlows = data.flows.map(f => ({
+              ...f,
+              steps: f.steps.filter(s => s.id !== id)
+          }));
+          setData({ ...data, flows: newFlows });
           if (selectedId === id) handleClosePanel();
       }
   };
 
   const handleUpdateSelectedStep = (updatedStep: ProcessStep) => {
       if (!data) return;
-      const newSteps = data.steps.map(s => s.id === updatedStep.id ? updatedStep : s);
-      setData({ ...data, steps: newSteps });
+      // Precisamos encontrar em qual fluxo esta etapa está
+      const newFlows = data.flows.map(f => ({
+          ...f,
+          steps: f.steps.map(s => s.id === updatedStep.id ? updatedStep : s)
+      }));
+      setData({ ...data, flows: newFlows });
   }
+
+  // --- Helpers for other items ---
 
   const handleUpdateStartNode = (updatedNode: ProcessNode) => {
       if (!data) return;
@@ -156,6 +216,16 @@ function App() {
       }
   }
 
+  // Helper to find step across all flows for the Details Panel
+  const findStepById = (id: string): ProcessStep | undefined => {
+      if (!data) return undefined;
+      for (const flow of data.flows) {
+          const step = flow.steps.find(s => s.id === id);
+          if (step) return step;
+      }
+      return undefined;
+  };
+
   if (!data) return null;
 
   // --- Render Logic for Bottom Panel Content ---
@@ -165,7 +235,7 @@ function App() {
   } else if (selectedType === 'end') {
       PanelContent = <NodeDetails node={data.endNode || { cards: [] }} type="end" onUpdate={handleUpdateEndNode} />;
   } else if (selectedType === 'step') {
-      const selectedStep = data.steps.find(s => s.id === selectedId);
+      const selectedStep = findStepById(selectedId || '');
       if (selectedStep) {
           PanelContent = <StepDetails step={selectedStep} onUpdate={handleUpdateSelectedStep} />;
       }
@@ -228,6 +298,8 @@ function App() {
                 {/* DEIP CANVAS (Timeline + Surroundings) */}
                 <DeipLayout 
                     data={data}
+                    activeFlowId={activeFlowId}
+                    setActiveFlowId={setActiveFlowId}
                     selectedId={selectedId}
                     onSelect={handleSelectElement}
                     onUpdateDeipItems={handleUpdateDeipItems}
@@ -235,6 +307,9 @@ function App() {
                     onUpdateSteps={updateSteps}
                     onAddStep={handleAddStep}
                     onDeleteStep={handleDeleteStep}
+                    onAddFlow={handleAddFlow}
+                    onDeleteFlow={handleDeleteFlow}
+                    onUpdateFlowName={handleUpdateFlowName}
                 />
 
                 {/* COLLAPSIBLE BOTTOM PANEL */}
