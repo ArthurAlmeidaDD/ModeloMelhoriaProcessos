@@ -1,5 +1,5 @@
 
-import { ProcessImprovement, ProcessFlow } from "../types/process";
+import { ProcessImprovement, ProcessFlow, DeipItem } from "../types/process";
 import { generateId } from "../lib/utils";
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -417,6 +417,219 @@ export const exportToPDF = (data: ProcessImprovement, type: 'simple' | 'complete
     }
     
     doc.save(`PDF_${type.toUpperCase()}_${data.title.replace(/\s+/g, '_')}.pdf`);
+};
+
+export const exportToDocumentPDF = (data: ProcessImprovement) => {
+    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+    const margin = 14;
+    const pageWidth = 210;
+    const maxLineWidth = pageWidth - (margin * 2);
+    let y = 20;
+
+    const checkPageBreak = (heightNeeded: number) => {
+        if (y + heightNeeded > 280) {
+            doc.addPage();
+            y = 20;
+            return true;
+        }
+        return false;
+    };
+
+    // Header
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text(data.title.toUpperCase(), margin, y);
+    y += 8;
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    
+    if (data.sectors) {
+        doc.setFont("helvetica", "bold");
+        doc.text(`Setores: ${data.sectors}`, margin, y);
+        doc.setFont("helvetica", "normal");
+        y += 5;
+    }
+
+    doc.text(`Documentação de Processo | Gerado em: ${new Date().toLocaleDateString()}`, margin, y);
+    y += 10;
+    
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 10;
+
+    const drawSectionTitle = (title: string) => {
+        checkPageBreak(20);
+        doc.setFillColor(240, 240, 240);
+        doc.rect(margin, y - 6, maxLineWidth, 10, 'F');
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(0);
+        doc.text(title.toUpperCase(), margin + 2, y);
+        y += 10;
+    };
+
+    const drawDeipList = (items: DeipItem[], emptyText: string) => {
+        if (!items || items.length === 0) {
+            checkPageBreak(10);
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "italic");
+            doc.setTextColor(100);
+            doc.text(emptyText, margin + 5, y);
+            y += 8;
+            return;
+        }
+
+        items.forEach(item => {
+            checkPageBreak(15);
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "bold");
+            
+            if (item.attention) {
+                doc.setTextColor(220, 38, 38); // Red
+                doc.text(`[!] ${item.title}`, margin + 5, y);
+            } else {
+                doc.setTextColor(0);
+                doc.text(`• ${item.title}`, margin + 5, y);
+            }
+            y += 5;
+
+            if (item.description) {
+                doc.setFont("helvetica", "normal");
+                doc.setTextColor(60);
+                const desc = doc.splitTextToSize(item.description, maxLineWidth - 10);
+                checkPageBreak(desc.length * 4);
+                doc.text(desc, margin + 10, y);
+                y += (desc.length * 4) + 3;
+            } else {
+                y += 2;
+            }
+        });
+        y += 5;
+    };
+
+    // 1. Políticas
+    drawSectionTitle("1. Políticas e Regras");
+    drawDeipList(data.deipItems.filter(i => i.category === 'policies'), "Nenhuma política definida.");
+
+    // 2. Entradas
+    drawSectionTitle("2. Entradas (Inputs)");
+    drawDeipList(data.deipItems.filter(i => i.category === 'inputs'), "Nenhuma entrada definida.");
+
+    // 3. Fluxos
+    drawSectionTitle("3. Fluxos do Processo");
+    
+    if (data.flows.length === 0) {
+        doc.text("Nenhum fluxo definido.", margin + 5, y);
+        y += 10;
+    }
+
+    data.flows.forEach((flow, fIndex) => {
+        checkPageBreak(15);
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(0);
+        doc.text(`Fluxo ${fIndex + 1}: ${flow.name}`, margin + 2, y);
+        y += 8;
+
+        if (flow.steps.length === 0) {
+             doc.setFont("helvetica", "italic");
+             doc.setFontSize(10);
+             doc.setTextColor(100);
+             doc.text("Nenhuma etapa neste fluxo.", margin + 5, y);
+             y += 8;
+        }
+
+        flow.steps.forEach((step, sIndex) => {
+            checkPageBreak(30);
+            
+            // Step Header
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "bold");
+            
+            let stepTitle = `${sIndex + 1}. ${step.name}`;
+            
+            // Highlighted Role (Right aligned)
+            if (step.role) {
+                const roleText = `Responsável: ${step.role}`;
+                doc.setFontSize(9);
+                doc.setTextColor(0, 102, 204); // Blue highlight
+                const roleWidth = doc.getTextWidth(roleText);
+                doc.text(roleText, pageWidth - margin - roleWidth, y);
+                doc.setFontSize(10); // Reset size
+            }
+
+            if (step.attention) {
+                doc.setTextColor(220, 38, 38);
+                doc.text(`[!] ${stepTitle}`, margin + 5, y);
+            } else {
+                doc.setTextColor(0);
+                doc.text(stepTitle, margin + 5, y);
+            }
+            y += 5;
+
+            // Inputs
+            if (step.inputs && step.inputs.length > 0) {
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(8);
+                doc.setTextColor(100);
+                const inputsLabel = "ENTRADAS: ";
+                const inputsText = step.inputs.join(', ');
+                
+                const labelWidth = doc.getTextWidth(inputsLabel);
+                doc.text(inputsLabel, margin + 10, y);
+                
+                doc.setFont("helvetica", "normal");
+                doc.setTextColor(50);
+                const splitInputs = doc.splitTextToSize(inputsText, maxLineWidth - 10 - labelWidth - 5);
+                doc.text(splitInputs, margin + 10 + labelWidth, y);
+                y += (splitInputs.length * 4) + 2;
+            }
+
+            // Content - AS-IS Only
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(9);
+            doc.setTextColor(50);
+
+            // Removed "AS-IS: " label, just the text
+            const asIsText = step.currentScenario || '-';
+            const asIsLines = doc.splitTextToSize(asIsText, maxLineWidth - 15);
+            checkPageBreak(asIsLines.length * 4);
+            doc.text(asIsLines, margin + 10, y);
+            y += (asIsLines.length * 4) + 2; 
+
+            // Outputs
+            if (step.outputs && step.outputs.length > 0) {
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(8);
+                doc.setTextColor(100);
+                const outputsLabel = "SAÍDAS: ";
+                const outputsText = step.outputs.join(', ');
+                
+                const labelWidth = doc.getTextWidth(outputsLabel);
+                doc.text(outputsLabel, margin + 10, y);
+                
+                doc.setFont("helvetica", "normal");
+                doc.setTextColor(50);
+                const splitOutputs = doc.splitTextToSize(outputsText, maxLineWidth - 10 - labelWidth - 5);
+                doc.text(splitOutputs, margin + 10 + labelWidth, y);
+                y += (splitOutputs.length * 4) + 2;
+            }
+
+            y += 2; // Extra spacing between steps
+        });
+        y += 5;
+    });
+
+    // 4. Saídas
+    drawSectionTitle("4. Saídas (Outputs)");
+    drawDeipList(data.deipItems.filter(i => i.category === 'outputs'), "Nenhuma saída definida.");
+
+    // 5. Recursos
+    drawSectionTitle("5. Recursos e Suporte");
+    drawDeipList(data.deipItems.filter(i => i.category === 'resources'), "Nenhum recurso definido.");
+
+    doc.save(`DOC_PROCESSO_${data.title.replace(/\s+/g, '_')}.pdf`);
 };
 
 export const exportToHTML = (data: ProcessImprovement) => {

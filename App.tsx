@@ -7,9 +7,10 @@ import { ProjectView } from './components/ProjectView';
 import { DeipLayout } from './components/DeipLayout';
 import { DeipItemDetails } from './components/DeipItemDetails';
 import { ProcessImprovement, ProcessStep, ProcessNode, DeipItem, ProcessFlow } from './types/process';
-import { loadFromLocalStorage, saveToLocalStorage, validateProcessJson, getEmptyProcess, ensureCompatibleData } from './utils/exportUtils';
+import { loadFromLocalStorage, saveToLocalStorage, validateProcessJson, getEmptyProcess, ensureCompatibleData, exportToJson } from './utils/exportUtils';
 import { generateId, cn } from './lib/utils';
 import { FileWarning, CheckCircle, LayoutTemplate, Rocket, X } from 'lucide-react';
+import { ConfirmationModal } from './components/ConfirmationModal';
 
 type SelectedType = 'step' | 'deip' | 'start' | 'end' | null;
 
@@ -21,6 +22,7 @@ function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<SelectedType>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
 
   const [currentView, setCurrentView] = useState<'process' | 'project'>('process');
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
@@ -89,6 +91,28 @@ function App() {
           reader.readAsText(file);
       }
       e.target.value = '';
+  };
+
+  const handleNewProject = () => {
+      setIsNewProjectModalOpen(true);
+  };
+
+  const confirmNewProject = () => {
+      const newData = getEmptyProcess();
+      setData(newData);
+      if (newData.flows.length > 0) {
+          setActiveFlowId(newData.flows[0].id);
+      }
+      handleClosePanel();
+      setIsNewProjectModalOpen(false);
+      showNotification('Novo projeto criado!', 'success');
+  };
+
+  const saveAndNewProject = () => {
+      if (data) {
+          exportToJson(data);
+          confirmNewProject();
+      }
   };
 
   // --- Handlers for Flows ---
@@ -293,6 +317,7 @@ function App() {
                     data={data} 
                     onUpdate={handleUpdate} 
                     onImport={handleImport}
+                    onNewProject={handleNewProject}
                 />
 
                 {/* DEIP CANVAS (Timeline + Surroundings) */}
@@ -338,6 +363,15 @@ function App() {
       ) : (
         <ProjectView data={data} onUpdate={handleUpdate} />
       )}
+
+      <ConfirmationModal 
+        isOpen={isNewProjectModalOpen}
+        onClose={() => setIsNewProjectModalOpen(false)}
+        onConfirm={confirmNewProject}
+        onSaveAndConfirm={saveAndNewProject}
+        title="Criar Novo Projeto?"
+        description="Ao criar um novo projeto, todas as alterações não salvas no projeto atual serão perdidas. Deseja salvar o projeto atual antes de continuar?"
+      />
 
     </div>
   );

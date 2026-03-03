@@ -1,13 +1,14 @@
 
 import React from 'react';
 import { Button } from './ui/button';
-import { FileJson, Download, Upload, FileText, Table, FileType, ChevronDown, Save, Code } from 'lucide-react';
+import { FileJson, Download, Upload, FileText, Table, FileType, ChevronDown, Save, Code, PlusCircle } from 'lucide-react';
 import { ProcessImprovement } from '../types/process';
-import { exportToCSV, exportToXLSX, exportToPDF, exportToJson, exportToHTML } from '../utils/exportUtils';
+import { exportToCSV, exportToXLSX, exportToPDF, exportToJson, exportToHTML, exportToDocumentPDF } from '../utils/exportUtils';
 
 interface ExportButtonsProps {
   data: ProcessImprovement;
   onImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onNewProject: () => void;
 }
 
 interface SimpleDropdownProps {
@@ -34,9 +35,19 @@ const SimpleDropdown: React.FC<SimpleDropdownProps> = ({ trigger, children }) =>
     )
 }
 
-export const ExportButtons: React.FC<ExportButtonsProps> = ({ data, onImport }) => {
+export const ExportButtons: React.FC<ExportButtonsProps> = ({ data, onImport, onNewProject }) => {
   return (
     <div className="flex flex-wrap items-center gap-2">
+      <Button 
+        variant="outline" 
+        size="sm" 
+        onClick={onNewProject}
+        className="bg-white hover:bg-slate-50 text-slate-700 border-slate-200 font-semibold"
+      >
+         <PlusCircle className="w-4 h-4 mr-2 text-green-600" />
+         Novo Projeto
+      </Button>
+
       <div className="relative inline-block group">
           <input 
             type="file" 
@@ -98,6 +109,11 @@ export const ExportButtons: React.FC<ExportButtonsProps> = ({ data, onImport }) 
              <FileType className="w-4 h-4 mr-3 text-red-600" />
              PDF (Completo)
              <span className="ml-auto text-[9px] text-slate-400 border border-slate-200 px-1 rounded">+Inputs/Outputs</span>
+        </button>
+        <button className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 flex items-center transition-colors font-medium" onClick={() => exportToDocumentPDF(data)}>
+             <FileType className="w-4 h-4 mr-3 text-red-600" />
+             PDF (Documentação)
+             <span className="ml-auto text-[9px] text-slate-400 border border-slate-200 px-1 rounded">DEIP + Fluxos</span>
         </button>
 
         <div className="border-t border-slate-50 my-1"></div>

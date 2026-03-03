@@ -8,9 +8,10 @@ interface ProcessHeaderProps {
   data: ProcessImprovement;
   onUpdate: (field: keyof ProcessImprovement, value: string) => void;
   onImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onNewProject: () => void;
 }
 
-export const ProcessHeader: React.FC<ProcessHeaderProps> = ({ data, onUpdate, onImport }) => {
+export const ProcessHeader: React.FC<ProcessHeaderProps> = ({ data, onUpdate, onImport, onNewProject }) => {
   return (
     <header className="bg-slate-900 text-white shadow-md z-20 flex-shrink-0 border-b border-slate-700">
         <div className="max-w-[1600px] mx-auto p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -64,7 +65,7 @@ export const ProcessHeader: React.FC<ProcessHeaderProps> = ({ data, onUpdate, on
 
             {/* Direita: Botões */}
             <div className="flex items-center gap-2">
-                <ExportButtons data={data} onImport={onImport} />
+                <ExportButtons data={data} onImport={onImport} onNewProject={onNewProject} />
             </div>
         </div>
     </header>
